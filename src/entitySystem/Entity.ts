@@ -13,22 +13,35 @@ interface EntityBuilderBase<D> {
     addComponent<T extends ComponentConstructor>(ctor: T, callback?: (factory: (...args: AuxParameters<T>) => ConstructorReturnValue<T>) => void): D
 }
 
-interface EntityBuilder extends EntityBuilderBase<EntityBuilder> {
-    setParent(parent: Entity): FinishedEntityBuilder
-    setSystem(system: EntitySystem): FinishedEntityBuilder
+/**
+ * Entity builder that does not yet have a system / parent set → Cannot build an entity yet
+ */
+interface IncompleteEntityBuilder extends EntityBuilderBase<IncompleteEntityBuilder> {
+    setParent(parent: Entity): ReadyEntityBuilder
+    setSystem(system: EntitySystem): ReadyEntityBuilder
 }
 
-interface FinishedEntityBuilder extends EntityBuilderBase<FinishedEntityBuilder> {
+/**
+ * Entity builder ready to build an entity
+ */
+interface ReadyEntityBuilder extends EntityBuilderBase<ReadyEntityBuilder> {
     build(): Entity
 }
 
+/**
+ * Base for a callback to be passed to EntityBuilder.addComponent
+ */
 type AddComponentCallback = (factory: (...args: any[]) => any) => void
 
+/**
+ * A prefab is used to create the same entity multiple times. 
+ */
 export interface Prefab {
-    (builder: FinishedEntityBuilder): void
+    (builder: ReadyEntityBuilder): void
 }
 
 export class Entity extends EventListener {
+    /** Adds and initializes a component */
     public addComponent<T extends ComponentConstructor>(ctor: T): (...args: AuxParameters<T>) => ConstructorReturnValue<T> {
         if (this.components.has(ctor)) throw new RangeError(`Entity already contains a component of type "${ctor.name}"`)
 
@@ -42,22 +55,30 @@ export class Entity extends EventListener {
         }
     }
 
+    /** Return a reference to a component with the provided type, throws RangeError if not found */
     public getComponent<T extends ComponentConstructor>(type: T): ConstructorReturnValue<T> {
         const component = this.components.get(type)
         if (component) return component as ConstructorReturnValue<T>
         else throw new RangeError(`Entity does not contain a component of type "${type.name}"`)
     }
 
+    /** 
+     * Adds the entity as a child. If the entity already had a parent, it gets removed from it
+     */
     public addChild(entity: Entity): Entity;
+    /**
+     * Creates an entity from the prefab and adds it as a child
+     */
     public addChild(prefab: Prefab): Entity;
     public addChild(ep: Entity | Prefab) {
         if (typeof ep == "function") {
             const builder = Entity.make().setParent(this)
             return ep(builder)
         } else {
+            // If we already have the entity as a child, no need to do anything
             if (this.children.has(ep)) return ep
 
-            if (ep.parent) {
+            if (ep.parent) { // If the entity already had a parent, remove it from it
                 ep.parent.children.delete(ep)
             }
 
@@ -69,19 +90,25 @@ export class Entity extends EventListener {
     }
 
     public [DISPOSE] = () => {
+        // Remove this from its parent's children
         this.parent?.children.delete(this)
+        // Remove all references so they don's get disposed, we don't own them
         Object.assign(this, { parent: null, system: null })
         super[DISPOSE]()
-        for (const [, component] of this.components) {
+
+        for (const [, component] of this.components) { // Dispose all components
             component.dispose()
         }
 
-        for (const child of this) {
+        for (const child of this) { // Dispose all children
             child.dispose()
         }
 
     }
 
+    /**
+     * Iterates over all children
+     */
     public [Symbol.iterator] = () => this.children[Symbol.iterator]()
 
     protected components = new Map<ComponentConstructor, Component>()
@@ -94,7 +121,7 @@ export class Entity extends EventListener {
     ) {
         super()
 
-        for (const [ctor, callback] of componentCallbacks) {
+        for (const [ctor, callback] of componentCallbacks) { // Construct and add all components
             callback((...args) => {
                 const component = new ctor(this, this.system, ...args)
 
@@ -104,19 +131,25 @@ export class Entity extends EventListener {
             })
         }
 
+        // Initialize all component ← component initialization is done
+        // only after all children have been added, so it can use getComponent
         for (const [, component] of this.components) {
             component.init()
         }
 
+        // Add us as a child to parent
         parent?.addChild(this)
     }
 
-    public static make(): EntityBuilder {
+    /**
+     * Creates an EntityBuilder
+     */
+    public static make(): IncompleteEntityBuilder {
         const componentCallbacks = new Map<ComponentConstructor, AddComponentCallback>()
         let parent: Entity | null = null
         let system: EntitySystem | null = null
 
-        const builder: FinishedEntityBuilder & EntityBuilder = {
+        const builder: ReadyEntityBuilder & IncompleteEntityBuilder = {
             addComponent(ctor: ComponentConstructor, callback: AddComponentCallback = v => v()) {
                 if (componentCallbacks.has(ctor)) throw new RangeError(`Entity already contains a component of type "${ctor.name}"`)
 
@@ -124,18 +157,21 @@ export class Entity extends EventListener {
 
                 return this
             },
+
             setParent(newParent) {
                 parent = newParent
                 system = newParent.system
 
                 return this
             },
+
             setSystem(newSystem) {
                 parent = null
                 system = newSystem
 
                 return this
             },
+
             build() {
                 return new Entity(system!, parent, componentCallbacks)
             }

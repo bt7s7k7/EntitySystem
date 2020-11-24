@@ -8,7 +8,6 @@ import { mockInstance } from "../testUtil/mock"
 import { tracker } from "../testUtil/tracker"
 
 describeMember(() => Entity, () => {
-
     describeMember(() => mockInstance<Entity>().dispose, () => {
         it("Should dispose of all components", () => {
             const componentTracker = tracker("component1")
