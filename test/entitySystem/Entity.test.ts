@@ -1,6 +1,6 @@
 import { expect } from "chai"
 import { Component } from "../../src/entitySystem/Component"
-import { Entity } from "../../src/entitySystem/Entity"
+import { Entity, Prefab } from "../../src/entitySystem/Entity"
 import { EntitySystem } from "../../src/entitySystem/EntitySystem"
 import { DISPOSE } from "../../src/eventLib/Disposable"
 import { describeMember } from "../testUtil/describeMember"
@@ -32,6 +32,89 @@ describeMember(() => Entity, () => {
             entity.dispose()
 
             componentTracker.check(1)
+        })
+
+        it("Should dispose all children", () => {
+            const componentTracker = tracker("component1")
+
+            class Component1 extends Component {
+                public [DISPOSE]() {
+                    super[DISPOSE]()
+                    componentTracker.trigger()
+                }
+            }
+
+            const entitySystem = new EntitySystem()
+
+            const entity = Entity.make()
+                .setSystem(entitySystem)
+                .addComponent(Component1)
+                .build()
+
+            entity.addChild(v => v.addComponent(Component1).build())
+            entity.addChild(v => v.addComponent(Component1).build())
+            entity.addChild(v => v.addComponent(Component1).build())
+
+            entity.dispose()
+
+            componentTracker.check(4)
+        })
+
+        it("Should remove the entity from its parent", () => {
+            const entitySystem = new EntitySystem()
+
+            const parent = Entity.make()
+                .setSystem(entitySystem)
+                .build()
+
+            const child = parent.addChild(v => v.build())
+
+            expect([...parent]).to.have.members([child])
+
+            child.dispose()
+
+            expect([...parent]).to.be.empty
+        })
+    })
+
+    describeMember(() => mockInstance<Entity>().addChild, () => {
+        it("Should add a child to an entity", () => {
+            const entitySystem = new EntitySystem()
+
+            const entity1 = Entity.make()
+                .setSystem(entitySystem)
+                .build()
+
+            const entity2 = Entity.make()
+                .setSystem(entitySystem)
+                .build()
+
+            expect(entity1.addChild(entity2)).to.equal(entity2)
+
+            for (const child of entity1) {
+                expect(child).to.equal(entity2)
+            }
+        })
+
+        it("Should add a child from a prefab to an entity", () => {
+            const entitySystem = new EntitySystem()
+
+            const parent = Entity.make()
+                .setSystem(entitySystem)
+                .build()
+
+            const expectedChildren: Entity[] = []
+            const prefab: Prefab = builder => {
+                const child = builder.build()
+                expectedChildren.push(child)
+            }
+
+            parent.addChild(prefab)
+            parent.addChild(prefab)
+            parent.addChild(prefab)
+
+            expect([...parent]).to.have.members(expectedChildren)
+
         })
     })
 

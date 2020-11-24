@@ -12,6 +12,7 @@ type ComponentConstructor = {
 interface EntityBuilderBase<D> {
     addComponent<T extends ComponentConstructor>(ctor: T, callback?: (factory: (...args: AuxParameters<T>) => ConstructorReturnValue<T>) => void): D
 }
+
 interface EntityBuilder extends EntityBuilderBase<EntityBuilder> {
     setParent(parent: Entity): FinishedEntityBuilder
     setSystem(system: EntitySystem): FinishedEntityBuilder
@@ -21,7 +22,11 @@ interface FinishedEntityBuilder extends EntityBuilderBase<FinishedEntityBuilder>
     build(): Entity
 }
 
-type AddComponentCallback = (factory: (...args: any[]) => any) => void;
+type AddComponentCallback = (factory: (...args: any[]) => any) => void
+
+export interface Prefab {
+    (builder: FinishedEntityBuilder): void
+}
 
 export class Entity extends EventListener {
     public addComponent<T extends ComponentConstructor>(ctor: T): (...args: AuxParameters<T>) => ConstructorReturnValue<T> {
@@ -43,14 +48,44 @@ export class Entity extends EventListener {
         else throw new RangeError(`Entity does not contain a component of type "${type.name}"`)
     }
 
+    public addChild(entity: Entity): Entity;
+    public addChild(prefab: Prefab): Entity;
+    public addChild(ep: Entity | Prefab) {
+        if (typeof ep == "function") {
+            const builder = Entity.make().setParent(this)
+            return ep(builder)
+        } else {
+            if (this.children.has(ep)) return ep
+
+            if (ep.parent) {
+                ep.parent.children.delete(ep)
+            }
+
+            ep.parent = this
+            this.children.add(ep)
+
+            return ep
+        }
+    }
+
     public [DISPOSE] = () => {
+        this.parent?.children.delete(this)
+        Object.assign(this, { parent: null, system: null })
         super[DISPOSE]()
         for (const [, component] of this.components) {
             component.dispose()
         }
+
+        for (const child of this) {
+            child.dispose()
+        }
+
     }
 
+    public [Symbol.iterator] = () => this.children[Symbol.iterator]()
+
     protected components = new Map<ComponentConstructor, Component>()
+    protected children = new Set<Entity>()
 
     protected constructor(
         protected readonly system: EntitySystem,
@@ -72,6 +107,8 @@ export class Entity extends EventListener {
         for (const [, component] of this.components) {
             component.init()
         }
+
+        parent?.addChild(this)
     }
 
     public static make(): EntityBuilder {
