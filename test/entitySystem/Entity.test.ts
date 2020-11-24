@@ -2,10 +2,39 @@ import { expect } from "chai"
 import { Component } from "../../src/entitySystem/Component"
 import { Entity } from "../../src/entitySystem/Entity"
 import { EntitySystem } from "../../src/entitySystem/EntitySystem"
+import { DISPOSE } from "../../src/eventLib/Disposable"
 import { describeMember } from "../testUtil/describeMember"
+import { mockInstance } from "../testUtil/mock"
 import { tracker } from "../testUtil/tracker"
 
 describeMember(() => Entity, () => {
+
+    describeMember(() => mockInstance<Entity>().dispose, () => {
+        it("Should dispose of all components", () => {
+            const componentTracker = tracker("component1")
+
+            class Component1 extends Component {
+                public [DISPOSE]() {
+                    super[DISPOSE]()
+                    componentTracker.trigger()
+                }
+            }
+
+            const entitySystem = new EntitySystem()
+
+            const entity = Entity.make()
+                .setSystem(entitySystem)
+                .addComponent(Component1)
+                .build()
+
+            componentTracker.check(0)
+
+            entity.dispose()
+
+            componentTracker.check(1)
+        })
+    })
+
     describeMember(() => Entity.make, () => {
         it("Should create the correct entity", () => {
             const component1Tracker = tracker("component1")

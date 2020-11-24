@@ -1,3 +1,4 @@
+import { DISPOSE } from "../eventLib/Disposable";
 import { EventListener } from "../eventLib/EventListener";
 import { Component } from "./Component";
 import { EntitySystem } from "./EntitySystem";
@@ -40,6 +41,13 @@ export class Entity extends EventListener {
         const component = this.components.get(type)
         if (component) return component as ConstructorReturnValue<T>
         else throw new RangeError(`Entity does not contain a component of type "${type.name}"`)
+    }
+
+    public [DISPOSE] = () => {
+        super[DISPOSE]()
+        for (const [, component] of this.components) {
+            component.dispose()
+        }
     }
 
     protected components = new Map<ComponentConstructor, Component>()
