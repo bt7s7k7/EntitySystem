@@ -58,6 +58,13 @@ export class Entity extends EventListener {
         else throw new RangeError(`Entity does not contain a component of type "${type.name}"`)
     }
 
+    /** Return a reference to a component with the provided type, throws RangeError if not found */
+    public tryGetComponent<T extends ComponentConstructor>(type: T): ConstructorReturnValue<T> | null {
+        const component = this.components.get(type)
+        if (component) return component as ConstructorReturnValue<T>
+        else return null
+    }
+
     /** 
      * Adds the entity as a child. If the entity already had a parent, it gets removed from it
      */
