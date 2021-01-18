@@ -27,7 +27,7 @@ export abstract class Component extends EventListener {
 
     constructor(
         public readonly entity: Entity,
-        protected readonly system: EntitySystem,
+        public readonly system: EntitySystem,
     ) {
         super()
         this.system.registerComponent(this)
