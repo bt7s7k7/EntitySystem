@@ -1,9 +1,10 @@
 import { expect } from "chai";
 import { Component } from "../../src/entitySystem/Component";
-import { Entity } from "../../src/entitySystem/Entity";
+import { Entity, Prefab } from "../../src/entitySystem/Entity";
 import { EntitySystem } from "../../src/entitySystem/EntitySystem";
 import { EventListener } from "../../src/eventLib/EventListener";
 import { describeMember } from "../testUtil/describeMember";
+import { mockInstance } from "../testUtil/mock";
 import { tracker } from "../testUtil/tracker";
 
 describeMember(() => EntitySystem, () => {
@@ -65,6 +66,49 @@ describeMember(() => EntitySystem, () => {
             entity.dispose()
 
             eventTracker.check(1)
+        })
+    })
+
+    describeMember(() => mockInstance<EntitySystem>().findComponents, () => {
+        it("Should find all components of a type", () => {
+            const entitySystem = new EntitySystem()
+
+            class CustomComponent extends Component { }
+            class CustomComponent2 extends Component { }
+            class CustomComponent3 extends Component { }
+
+            const instArray: CustomComponent[] = []
+
+            const prefab: Prefab = builder => {
+                builder
+                    .addComponent(CustomComponent, v => {
+                        const inst = v()
+                        instArray.push(inst)
+                        return inst
+                    })
+                    .addComponent(CustomComponent2)
+                    .build()
+            }
+
+            const entity = Entity.make().setSystem(entitySystem).build()
+
+            entity.addChild(prefab)
+            entity.addChild(prefab)
+            entity.addChild(prefab)
+
+            const foundComponents = entitySystem.findComponents(CustomComponent)
+
+            expect(foundComponents).to.have.length(3)
+
+            expect(foundComponents).to.include.members(instArray)
+
+            const foundComponent = entitySystem.findComponent(CustomComponent)
+
+            expect(foundComponent).to.be.oneOf(instArray)
+
+            expect(() => {
+                entitySystem.findComponent(CustomComponent3)
+            }).to.throw("CustomComponent3")
         })
     })
 })

@@ -12,6 +12,7 @@ export abstract class Component extends EventListener {
     }
 
     public [DISPOSE]() {
+        this.system.unregisterComponent(this)
         // Remove all references so they don't get disposed ← we don't own them
         Object.assign(this, { entity: null, system: null })
         super[DISPOSE]()
@@ -22,5 +23,6 @@ export abstract class Component extends EventListener {
         protected readonly system: EntitySystem,
     ) {
         super()
+        this.system.registerComponent(this)
     }
 }

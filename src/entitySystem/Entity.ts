@@ -2,13 +2,9 @@ import { DISPOSE } from "../eventLib/Disposable";
 import { EventListener } from "../eventLib/EventListener";
 import { Component } from "./Component";
 import { EntitySystem } from "./EntitySystem";
+import { ComponentConstructor, ConstructorReturnValue } from "./util";
 
 type AuxParameters<T> = T extends { new(entity: Entity, system: EntitySystem, ...args: infer U): any } ? U : never
-type ConstructorReturnValue<T> = T extends { new(...args: any[]): infer U } ? U : never
-type ComponentConstructor = {
-    new(entity: Entity, system: EntitySystem, ...args: any[]): Component;
-}
-
 interface EntityBuilderBase<D> {
     addComponent<T extends ComponentConstructor>(ctor: T, callback?: (factory: (...args: AuxParameters<T>) => ConstructorReturnValue<T>) => void): D
 }
