@@ -5,6 +5,7 @@ import { EntitySystem } from "../../../src/entitySystem/EntitySystem"
 import { ComponentManifest } from "../../../src/entitySystem/serialization/ComponentManifest"
 import { ComponentRegistry } from "../../../src/entitySystem/serialization/ComponentRegistry"
 import { EntitySaver, NonSerializableParentError, SerializableComponentNotRegisteredError } from "../../../src/entitySystem/serialization/EntitySaver"
+import { SaveData } from "../../../src/entitySystem/serialization/SaveData"
 import { SaveType } from "../../../src/entitySystem/serialization/SaveType"
 import { describeMember } from "../../testUtil/describeMember"
 import { mockInstance } from "../../testUtil/mock"
@@ -181,6 +182,78 @@ describe("serialization", () => {
                 const compRef = saveData.entities.find(v => v.components[0].name == "CompRef")
 
                 expect(compRef!.components[0].data.ref).to.equal(foo!.id)
+            })
+        })
+
+        describeMember(() => mockInstance<EntitySaver>().load, () => {
+            it("Should load all save data", () => {
+                const saveData: SaveData = {
+                    entities: [
+                        {
+                            id: "0",
+                            parent: null,
+                            components: [
+                                {
+                                    name: "Foo",
+                                    data: {
+                                        name: "Foo1"
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            id: "1",
+                            parent: "2",
+                            components: [
+                                {
+                                    name: "CompRef",
+                                    data: {
+                                        ref: "0"
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            id: "2",
+                            parent: null,
+                            components: [
+                                {
+                                    name: "Boo",
+                                    data: {
+                                        label: "Boo1"
+                                    }
+                                }
+                            ]
+                        }
+                    ]
+                }
+
+                const { saver, system, Boo, Foo, CompRef } = prepare()
+
+                const loaded = saver.load(system, saveData)
+
+                const boos = system.findComponents(Boo)
+                expect(boos).to.have.lengthOf(1)
+                const boo = boos[0]
+
+                const foos = system.findComponents(Foo)
+                expect(foos).to.have.lengthOf(1)
+                const foo = foos[0]
+
+                const compRefs = system.findComponents(CompRef)
+                expect(compRefs).to.have.lengthOf(1)
+                const compRef = compRefs[0]
+
+                expect(loaded.get(Boo)).to.have.lengthOf(1)
+                expect(loaded.get(Boo)![0]).to.equal(boo)
+                expect(loaded.get(Foo)).to.have.lengthOf(1)
+                expect(loaded.get(Foo)![0]).to.equal(foo)
+                expect(loaded.get(CompRef)).to.have.lengthOf(1)
+                expect(loaded.get(CompRef)![0]).to.equal(compRef)
+
+                expect(foo.name).to.equal("Foo1")
+                expect(boo.label).to.equal("Boo1")
+                expect(compRef.ref).to.equal(foo)
             })
         })
     })

@@ -91,7 +91,7 @@ export class EntitySaver {
                     if (!loadedComponents.has(type)) loadedComponents.set(type, [])
                     loadedComponents.get(type)!.push(component)
 
-                    return make()
+                    return component
                 })
             }
 

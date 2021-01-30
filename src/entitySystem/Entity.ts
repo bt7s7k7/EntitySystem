@@ -133,7 +133,10 @@ export class Entity extends EventListener {
         super()
 
         for (const [ctor, callback] of componentCallbacks) { // Construct and add all components
+            let callbackExecuted = false
             callback((...args) => {
+                if (callbackExecuted) throw new Error("Duplicate execution of the construction callback")
+                callbackExecuted = true
                 const component = new ctor(this, this.system, ...args)
 
                 this.components.set(ctor, component)
