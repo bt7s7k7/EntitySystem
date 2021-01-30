@@ -49,16 +49,27 @@ describe("serialization", () => {
                 }
             }
 
+            class CompRef extends Component {
+                constructor(entity: Entity, system: EntitySystem, public ref: Foo | null = null) {
+                    super(entity, system)
+                }
+
+                public static [ComponentManifest.MANIFEST] = new ComponentManifest(CompRef, [
+                    { name: "ref", type: SaveType.component(Foo) }
+                ])
+            }
+
             const registry = new ComponentRegistry()
 
             registry.register(Foo)
             registry.register(Boo)
+            registry.register(CompRef)
 
             const saver = new EntitySaver(registry)
 
             const system = new EntitySystem()
 
-            return { Foo, Boo, Noo, Plain, registry, saver, system }
+            return { Foo, Boo, Noo, Plain, CompRef, registry, saver, system }
         }
 
         describeMember(() => mockInstance<EntitySaver>().save, () => {
@@ -103,11 +114,11 @@ describe("serialization", () => {
                 const { system, Foo, Noo, saver } = prepare()
 
                 Entity.make().setSystem(system)
-                    .addComponent(Foo, v => v("Foo1"))
+                    .addComponent(Foo)
                     .build()
 
                 Entity.make().setSystem(system)
-                    .addComponent(Noo, v => v("Foo2"))
+                    .addComponent(Noo)
                     .build()
 
                 expect(() => {
@@ -136,18 +147,41 @@ describe("serialization", () => {
                 const { system, Foo, Plain, saver } = prepare()
 
                 const parent = Entity.make().setSystem(system)
-                    .addComponent(Plain, v => v("Foo2"))
+                    .addComponent(Plain)
                     .build()
 
                 Entity.make().setParent(parent)
-                    .addComponent(Foo, v => v("Foo1"))
+                    .addComponent(Foo)
                     .build()
 
                 expect(() => {
                     saver.save(system)
                 }).to.throw(NonSerializableParentError)
             })
-            it("Should serialize component references")
+
+            it("Should serialize component references", () => {
+                const { system, Foo, CompRef, saver } = prepare()
+
+                {
+                    const fooCont = Entity.make().setSystem(system)
+                        .addComponent(Foo)
+                        .build()
+
+                    const foo = fooCont.getComponent(Foo)
+
+                    Entity.make().setSystem(system)
+                        .addComponent(CompRef, v => v(foo))
+                        .build()
+                }
+
+                const saveData = saver.save(system)
+
+                expect(saveData.entities).to.have.lengthOf(2)
+                const foo = saveData.entities.find(v => v.components[0].name == "Foo")
+                const compRef = saveData.entities.find(v => v.components[0].name == "CompRef")
+
+                expect(compRef!.components[0].data.ref).to.equal(foo!.id)
+            })
         })
     })
 })

@@ -1,4 +1,6 @@
-import { Entity } from "../../entitySystem/Entity";
+import { Entity } from "../../entitySystem/Entity"
+
+export class EntityNotIndexedError extends Error { }
 
 /** Stores and marks all entities with an id during saving and loading */
 export class SavingIndex {
@@ -13,14 +15,14 @@ export class SavingIndex {
         const ret = this.entityIDs.get(entity)
         if (ret) {
             return ret
-        } else throw new RangeError(`Tried to get id of not registered entity`)
+        } else throw new EntityNotIndexedError(`Tried to get id of not registered entity`)
     }
 
     public getEntity(id: string) {
         const ret = this.entities[id]
         if (ret) {
             return ret
-        } else throw new RangeError(`No entity with id "${id}" found`)
+        } else throw new EntityNotIndexedError(`No entity with id "${id}" found`)
     }
 
     public hasID(entity: Entity) {
