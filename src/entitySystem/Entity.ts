@@ -6,7 +6,7 @@ import { ComponentConstructor, ConstructorReturnValue } from "./util";
 
 type AuxParameters<T> = T extends { new(entity: Entity, system: EntitySystem, ...args: infer U): any } ? U : never
 interface EntityBuilderBase<D> {
-    addComponent<T extends ComponentConstructor>(ctor: T, callback?: (factory: (...args: AuxParameters<T>) => ConstructorReturnValue<T>) => void): D
+    addComponent<T extends ComponentConstructor>(ctor: T, callback?: (factory: (...args: AuxParameters<T>) => ConstructorReturnValue<T>, entity: Entity) => void): D
 }
 
 /**
@@ -27,7 +27,7 @@ interface ReadyEntityBuilder extends EntityBuilderBase<ReadyEntityBuilder> {
 /**
  * Base for a callback to be passed to EntityBuilder.addComponent
  */
-type AddComponentCallback = (factory: (...args: any[]) => any) => void
+type AddComponentCallback = (factory: (...args: any[]) => any, entity: Entity) => void
 
 /**
  * A prefab is used to create the same entity multiple times. 
@@ -109,6 +109,14 @@ export class Entity extends EventListener {
 
     }
 
+    public getAllComponents() {
+        return this.components.values()
+    }
+
+    public getParent() {
+        return this.parent
+    }
+
     /**
      * Iterates over all children
      */
@@ -131,7 +139,7 @@ export class Entity extends EventListener {
                 this.components.set(ctor, component)
 
                 return component
-            })
+            }, this)
         }
 
         // Initialize all component ← component initialization is done

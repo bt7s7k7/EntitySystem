@@ -5,9 +5,9 @@
     "author": "Branislav Trstenský <bt7s7k7@hotmail.sk>",
     "license": "MIT",
     "scripts": {
-        "test": "ts-node node_modules/mocha/bin/mocha test/**/*.test.ts",
+        "test": "ts-node node_modules/mocha/bin/mocha \"test/**/*.test.ts\"",
         "coverage": "nyc --exclude **/*.test.ts -r text -e .ts -x \"*.test.ts\" npm run test",
-        "test-dev": "ts-node-dev --preserve-symlinks -T --respawn --cls --watch src,test --inspect -- node_modules/mocha/bin/mocha test/**/*.test.ts"
+        "test-dev": "ts-node-dev --preserve-symlinks -T --respawn --cls --watch src,test --inspect -- node_modules/mocha/bin/mocha \"test/**/*.test.ts\""
     },
     "devDependencies": {
         "@types/chai": "^4.2.12",

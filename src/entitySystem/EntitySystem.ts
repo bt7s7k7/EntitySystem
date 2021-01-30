@@ -45,6 +45,12 @@ export class EntitySystem extends Disposable {
         if (!this.components.get(ctor)!.delete(component)) throw new Error("Tried to unregister a component that was newer registered")
     }
 
+    public * getAllComponents() {
+        for (const type of this.components.values()) {
+            yield* type.values()
+        }
+    }
+
     public [DISPOSE] = () => {
         super[DISPOSE]()
 
