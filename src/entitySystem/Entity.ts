@@ -95,8 +95,6 @@ export class Entity extends EventListener {
     public [DISPOSE] = () => {
         // Remove this from its parent's children
         this.parent?.children.delete(this)
-        // Remove all references so they don's get disposed, we don't own them
-        Object.assign(this, { parent: null, system: null })
         super[DISPOSE]()
 
         for (const [, component] of this.components) { // Dispose all components
