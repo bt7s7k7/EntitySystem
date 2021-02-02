@@ -111,4 +111,23 @@ describeMember(() => EntitySystem, () => {
             }).to.throw("CustomComponent3")
         })
     })
+
+    describeMember(() => mockInstance<EntitySystem>().getAllEntities, () => {
+        it("Should return all registered entities", () => {
+            const entities: Entity[] = []
+
+            const system = new EntitySystem()
+
+            entities.push(Entity.make().setSystem(system).build())
+            entities.push(Entity.make().setSystem(system).build())
+            entities.push(Entity.make().setSystem(system).build())
+
+            const next = Entity.make().setSystem(system).build()
+
+            next.dispose()
+
+            expect([...system.getAllEntities()]).to.have.members(entities)
+            expect([...system.getAllEntities()]).to.not.have.members([next])
+        })
+    })
 })

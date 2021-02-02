@@ -95,6 +95,7 @@ export class Entity extends EventListener {
     public [DISPOSE] = () => {
         // Remove this from its parent's children
         this.parent?.children.delete(this)
+        this.system.unregisterEntity(this)
         super[DISPOSE]()
 
         for (const [, component] of this.components) { // Dispose all components
@@ -129,6 +130,7 @@ export class Entity extends EventListener {
         componentCallbacks: Map<ComponentConstructor, AddComponentCallback>
     ) {
         super()
+        this.system.registerEntity(this)
 
         for (const [ctor, callback] of componentCallbacks) { // Construct and add all components
             let callbackExecuted = false

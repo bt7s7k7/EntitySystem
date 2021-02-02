@@ -1,6 +1,7 @@
 import { Disposable, DISPOSE } from "../eventLib/Disposable";
 import { EventEmitter } from "../eventLib/EventEmitter";
 import { Component } from "./Component";
+import { Entity } from "./Entity";
 import { ComponentConstructor, ConstructorReturnValue } from "./util";
 
 /** 
@@ -45,10 +46,24 @@ export class EntitySystem extends Disposable {
         if (!this.components.get(ctor)!.delete(component)) throw new Error("Tried to unregister a component that was newer registered")
     }
 
+    /** Internal method to register entity for disposing */
+    public registerEntity(entity: Entity) {
+        this.entities.add(entity)
+    }
+
+    /** Internal method to unregister entity for disposing */
+    public unregisterEntity(entity: Entity) {
+        if (!this.entities.delete(entity)) throw new RangeError("Tried to unregister an entity not registered before")
+    }
+
     public * getAllComponents() {
         for (const type of this.components.values()) {
             yield* type.values()
         }
+    }
+
+    public getAllEntities() {
+        return this.entities.values()
     }
 
     public [DISPOSE] = () => {
@@ -58,12 +73,17 @@ export class EntitySystem extends Disposable {
             eventEmitter.dispose()
         }
 
+        for (const entity of this.entities) {
+            entity.dispose()
+        }
+
         this.events.clear()
     }
 
     /** All EventEmitters, indexed by their event definition*/
     protected events = new Map<EntitySystem.EventDefinition<any>, EventEmitter<any>>()
     protected components = new Map<ComponentConstructor, Set<Component>>()
+    protected entities = new Set<Entity>()
 }
 
 export namespace EntitySystem {
