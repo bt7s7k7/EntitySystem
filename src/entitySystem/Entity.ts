@@ -7,6 +7,7 @@ import { ComponentConstructor, ConstructorReturnValue } from "./util";
 type AuxParameters<T> = T extends { new(entity: Entity, system: EntitySystem, ...args: infer U): any } ? U : never
 interface EntityBuilderBase<D> {
     addComponent<T extends ComponentConstructor>(ctor: T, callback?: (factory: (...args: AuxParameters<T>) => ConstructorReturnValue<T>, entity: Entity) => void): D
+    hookBuild(callback: (entity: Entity) => void): void
 }
 
 /**
@@ -163,6 +164,8 @@ export class Entity extends EventListener {
         let parent: Entity | null = null
         let system: EntitySystem | null = null
 
+        const hooks: ((entity: Entity) => void)[] = []
+
         const builder: ReadyEntityBuilder & IncompleteEntityBuilder = {
             addComponent(ctor: ComponentConstructor, callback: AddComponentCallback = v => v()) {
                 if (componentCallbacks.has(ctor)) throw new RangeError(`Entity already contains a component of type "${ctor.name}"`)
@@ -187,7 +190,13 @@ export class Entity extends EventListener {
             },
 
             build() {
-                return new Entity(system!, parent, componentCallbacks)
+                const ret = new Entity(system!, parent, componentCallbacks)
+                hooks.forEach(v => v(ret))
+                return ret
+            },
+
+            hookBuild(callback) {
+                hooks.push(callback)
             }
         }
 
