@@ -23,6 +23,11 @@ export abstract class Component extends EventListener {
         super[DISPOSE]()
     }
 
+    public set(values: Partial<this>) {
+        Object.assign(this, values)
+        return this
+    }
+
     constructor(
         public readonly entity: Entity,
         public readonly system: EntitySystem,
