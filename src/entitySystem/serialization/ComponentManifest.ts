@@ -53,7 +53,7 @@ export class ComponentManifest<T extends Component = Component> {
 }
 
 export namespace ComponentManifest {
-    export interface Field<T> {
+    export interface Field<T = Component> {
         name: { [P in keyof T]: P extends string ? P : never }[keyof T],
         type: SaveType
     }
