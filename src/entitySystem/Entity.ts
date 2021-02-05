@@ -126,7 +126,7 @@ export class Entity extends EventListener {
     protected children = new Set<Entity>()
 
     protected constructor(
-        protected readonly system: EntitySystem,
+        public readonly system: EntitySystem,
         protected parent: Entity | null,
         componentCallbacks: Map<ComponentConstructor, AddComponentCallback>
     ) {
