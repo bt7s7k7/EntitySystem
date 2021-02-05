@@ -11,8 +11,7 @@ export class SerializableComponentNotRegisteredError extends Error { }
 export class NonSerializableParentError extends Error { }
 
 export class EntitySaver {
-
-    public save(system: EntitySystem): SaveData {
+    public indexSystem(system: EntitySystem) {
         const entities = new Map<Entity, { component: Component, manifest: ComponentManifest }[]>()
         const index = new SavingIndex()
 
@@ -32,6 +31,12 @@ export class EntitySaver {
                 })
             }
         }
+
+        return { entities, index }
+    }
+
+    public save(system: EntitySystem): SaveData {
+        const { entities, index } = this.indexSystem(system)
 
         const saveData: SaveData = { entities: [] }
 
