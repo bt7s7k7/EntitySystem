@@ -17,5 +17,15 @@ export class ComponentRegistry {
         this.components[component.name] = component
     }
 
+    public include(other: ComponentRegistry) {
+        Object.assign(this.components, other.components)
+    }
+
+    public finish() {
+        this.register = () => {
+            throw new Error("Tried to register an entry into a finished registry")
+        }
+    }
+
     protected readonly components: Record<string, ManifestedComponent> = {}
 }
