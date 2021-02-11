@@ -5,8 +5,13 @@ export class EntityNotIndexedError extends Error { }
 /** Stores and marks all entities with an id during saving and loading */
 export class SavingIndex {
 
-    public register(entity: Entity, id = this.nextID()) {
+    public register(entity: Entity, id: string | null = null) {
         if (this.entityIDs.has(entity)) return
+        if (id == null) {
+            id = this.nextID()
+        } else {
+            if (id in this.entities) throw new Error(`Duplicate ID for registered entity "${id}"`)
+        }
         this.entities[id] = entity
         this.entityIDs.set(entity, id.toString())
     }
@@ -42,7 +47,11 @@ export class SavingIndex {
     }
 
     public nextID() {
-        return (this.idCounter++).toString()
+        let ret = "0"
+        while (ret in this.entities) {
+            ret = (this.idCounter++).toString()
+        }
+        return ret
     }
 
     protected idCounter = 0
