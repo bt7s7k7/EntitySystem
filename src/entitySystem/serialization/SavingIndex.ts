@@ -5,10 +5,18 @@ export class EntityNotIndexedError extends Error { }
 /** Stores and marks all entities with an id during saving and loading */
 export class SavingIndex {
 
-    public register(entity: Entity, id = (this.idCounter++).toString()) {
+    public register(entity: Entity, id = this.nextID()) {
         if (this.entityIDs.has(entity)) return
         this.entities[id] = entity
         this.entityIDs.set(entity, id.toString())
+    }
+
+    public unregister(entity: Entity) {
+        const id = this.entityIDs.get(entity)
+        if (!id) throw new EntityNotIndexedError("Tried to unregister not registered entity")
+
+        this.entityIDs.delete(entity)
+        delete this.entities[id]
     }
 
     public getID(entity: Entity) {
@@ -25,8 +33,16 @@ export class SavingIndex {
         } else throw new EntityNotIndexedError(`No entity with id "${id}" found`)
     }
 
+    public tryGetEntity(id: string): Entity | null {
+        return this.entities[id] ?? null
+    }
+
     public hasID(entity: Entity) {
         return this.entityIDs.has(entity)
+    }
+
+    public nextID() {
+        return (this.idCounter++).toString()
     }
 
     protected idCounter = 0
