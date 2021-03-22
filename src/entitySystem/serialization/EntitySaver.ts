@@ -1,11 +1,11 @@
-import { ComponentConstructor } from "../../entitySystem/util";
-import { Component } from "../Component";
-import { Entity } from "../Entity";
-import { EntitySystem } from "../EntitySystem";
-import { ComponentManifest, ManifestedComponent } from "./ComponentManifest";
-import { ComponentRegistry } from "./ComponentRegistry";
-import { SaveData } from "./SaveData";
-import { SavingIndex } from "./SavingIndex";
+import { ComponentConstructor } from "../../entitySystem/util"
+import { Component } from "../Component"
+import { Entity } from "../Entity"
+import { EntitySystem } from "../EntitySystem"
+import { ComponentManifest, ManifestedComponent } from "./ComponentManifest"
+import { ComponentRegistry } from "./ComponentRegistry"
+import { SaveData } from "./SaveData"
+import { SavingIndex } from "./SavingIndex"
 
 export class SerializableComponentNotRegisteredError extends Error { }
 export class NonSerializableParentError extends Error { }
@@ -17,10 +17,10 @@ export class EntitySaver {
 
         for (const component of system.getAllComponents()) {
             if (ComponentManifest.MANIFEST in component.constructor) {
-                if (!this.componentRegistry.hasComponent(component)) throw new SerializableComponentNotRegisteredError(`Found serializable component "${component.constructor.name}", but it's not registered in the registry`)
+                if (!this.componentRegistry.hasComponent(component)) throw new SerializableComponentNotRegisteredError(`Found serializable component "${(component.constructor as ManifestedComponent)[ComponentManifest.MANIFEST].name}", but it's not registered in the registry`)
                 const manifest = (component.constructor as ManifestedComponent)[ComponentManifest.MANIFEST]
 
-                const entity = component.entity;
+                const entity = component.entity
                 if (!entities.has(entity)) {
                     entities.set(entity, [])
                     index.register(entity)

@@ -1,8 +1,8 @@
-import { DISPOSE } from "../eventLib/Disposable";
-import { EventListener } from "../eventLib/EventListener";
-import { Component } from "./Component";
-import { EntitySystem } from "./EntitySystem";
-import { ComponentConstructor, ConstructorReturnValue } from "./util";
+import { DISPOSE } from "../eventLib/Disposable"
+import { EventListener } from "../eventLib/EventListener"
+import { Component } from "./Component"
+import { EntitySystem } from "./EntitySystem"
+import { ComponentConstructor, ConstructorReturnValue } from "./util"
 
 type AuxParameters<T> = T extends { new(entity: Entity, system: EntitySystem, ...args: infer U): any } ? U : never
 interface EntityBuilderBase<D> {
@@ -69,11 +69,11 @@ export class Entity extends EventListener {
     /** 
      * Adds the entity as a child. If the entity already had a parent, it gets removed from it
      */
-    public addChild(entity: Entity): Entity;
+    public addChild(entity: Entity): Entity
     /**
      * Creates an entity from the prefab and adds it as a child
      */
-    public addChild(prefab: Prefab): Entity;
+    public addChild(prefab: Prefab): Entity
     public addChild(ep: Entity | Prefab) {
         if (typeof ep == "function") {
             const builder = Entity.make().setParent(this)

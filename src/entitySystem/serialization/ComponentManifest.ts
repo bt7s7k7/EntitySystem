@@ -1,13 +1,11 @@
-import { Component } from "../../entitySystem/Component";
-import { ComponentConstructor } from "../../entitySystem/util";
-import { SaveData } from "./SaveData";
-import { SaveType } from "./SaveType";
-import { SavingIndex } from "./SavingIndex";
+import { Component } from "../../entitySystem/Component"
+import { ComponentConstructor } from "../../entitySystem/util"
+import { SaveData } from "./SaveData"
+import { SaveType } from "./SaveType"
+import { SavingIndex } from "./SavingIndex"
 
 /** Stores all properties to be saved and loaded */
 export class ComponentManifest<T extends Component = Component> {
-    public readonly name = this.component.name
-
     public saveComponent(component: T, index: SavingIndex): SaveData.Component {
         const componentSaveData: SaveData.Component = {
             data: {},
@@ -47,6 +45,7 @@ export class ComponentManifest<T extends Component = Component> {
     }
 
     constructor(
+        public readonly name: string,
         public readonly component: new (...args: any) => T,
         public readonly fields: ComponentManifest.Field<T>[]
     ) { }
