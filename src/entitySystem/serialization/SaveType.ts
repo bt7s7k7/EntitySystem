@@ -1,3 +1,4 @@
+import { WeakRef } from "../../eventLib/SharedRef"
 import { Component } from "../Component"
 import { ComponentManifest, ManifestedComponent } from "./ComponentManifest"
 import { SavePayload } from "./SavePayload"
@@ -63,13 +64,13 @@ export namespace SaveType {
 
                 const entity = payload.index.getEntity(id)
 
-                const targetComponent = entity.getComponent(component)
+                const targetComponentRef = entity.getComponent(component).getWeakRef()
 
-                payload.component[payload.field] = targetComponent
+                payload.component[payload.field] = targetComponentRef
             },
 
             save(payload) {
-                const targetComponent = payload.component[payload.field] as Component | null
+                const targetComponent = (payload.component[payload.field] as WeakRef<Component> | null)?.tryGetValue()
                 if (targetComponent == null) return
                 const entity = targetComponent.entity
 

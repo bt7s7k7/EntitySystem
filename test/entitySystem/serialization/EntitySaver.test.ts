@@ -7,6 +7,7 @@ import { ComponentRegistry } from "../../../src/entitySystem/serialization/Compo
 import { EntitySaver, NonSerializableParentError, SerializableComponentNotRegisteredError } from "../../../src/entitySystem/serialization/EntitySaver"
 import { SaveData } from "../../../src/entitySystem/serialization/SaveData"
 import { SaveType } from "../../../src/entitySystem/serialization/SaveType"
+import { WeakRef } from "../../../src/eventLib/SharedRef"
 import { describeMember } from "../../testUtil/describeMember"
 import { mockInstance } from "../../testUtil/mock"
 
@@ -51,7 +52,7 @@ describe("serialization", () => {
             }
 
             class CompRef extends Component {
-                constructor(entity: Entity, system: EntitySystem, public ref: Foo | null = null) {
+                constructor(entity: Entity, system: EntitySystem, public ref: WeakRef<Foo> = WeakRef.empty) {
                     super(entity, system)
                 }
 
@@ -171,7 +172,7 @@ describe("serialization", () => {
                     const foo = fooCont.getComponent(Foo)
 
                     Entity.make().setSystem(system)
-                        .addComponent(CompRef, v => v(foo))
+                        .addComponent(CompRef, v => v(foo.getWeakRef()))
                         .build()
                 }
 
@@ -253,7 +254,7 @@ describe("serialization", () => {
 
                 expect(foo.name).to.equal("Foo1")
                 expect(boo.label).to.equal("Boo1")
-                expect(compRef.ref).to.equal(foo)
+                expect(compRef.ref?.value).to.equal(foo)
             })
         })
     })
