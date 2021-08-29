@@ -1,8 +1,8 @@
-import { DISPOSE } from "../eventLib/Disposable";
-import { EventListener } from "../eventLib/EventListener";
-import { Entity } from "./Entity";
-import { EntitySystem } from "./EntitySystem";
-import { ComponentConstructor, ConstructorReturnValue } from "./util";
+import { DISPOSE } from "../eventLib/Disposable"
+import { EventListener } from "../eventLib/EventListener"
+import { Entity } from "./Entity"
+import { EntitySystem } from "./EntitySystem"
+import { ComponentConstructor, ConstructorReturnValue } from "./util"
 
 const COMPONENT_REF = Symbol("IS_COMPONENT_REF")
 
@@ -20,6 +20,7 @@ export abstract class Component extends EventListener {
 
     public [DISPOSE]() {
         this.system.unregisterComponent(this)
+        this.entity.unregisterComponent(this)
         super[DISPOSE]()
     }
 
