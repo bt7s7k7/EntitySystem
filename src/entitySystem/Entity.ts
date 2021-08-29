@@ -6,7 +6,7 @@ import { ComponentConstructor, ConstructorReturnValue } from "./util"
 
 type AuxParameters<T> = T extends { new(entity: Entity, system: EntitySystem, ...args: infer U): any } ? U : never
 interface EntityBuilderBase<D> {
-    addComponent<T extends ComponentConstructor>(ctor: T, callback?: (factory: (...args: AuxParameters<T>) => ConstructorReturnValue<T>, entity: Entity) => void): D
+    addComponent<T extends ComponentConstructor>(ctor: T, callback?: ((factory: (...args: AuxParameters<T>) => ConstructorReturnValue<T>, entity: Entity) => void) | Partial<ConstructorReturnValue<T>>): D
     hookBuild(callback: (entity: Entity) => void): void
 }
 
@@ -34,12 +34,12 @@ type AddComponentCallback = (factory: (...args: any[]) => any, entity: Entity) =
  * A prefab is used to create the same entity multiple times. 
  */
 export interface Prefab {
-    (builder: ReadyEntityBuilder): void
+    (builder: ReadyEntityBuilder): Entity
 }
 
 export class Entity extends EventListener {
     /** Adds and initializes a component */
-    public addComponent<T extends ComponentConstructor>(ctor: T): (...args: AuxParameters<T>) => ConstructorReturnValue<T> {
+    /* public addComponent<T extends ComponentConstructor>(ctor: T): (...args: AuxParameters<T>) => ConstructorReturnValue<T> {
         if (this.components.has(ctor)) throw new RangeError(`Entity already contains a component of type "${ctor.name}"`)
 
         return (...args) => {
@@ -50,6 +50,23 @@ export class Entity extends EventListener {
 
             return component
         }
+    } */
+    public addComponent<T extends ComponentConstructor>(ctor: T, callback: ((factory: (...args: AuxParameters<T>) => ConstructorReturnValue<T>, entity: Entity) => ConstructorReturnValue<T>) | Partial<ConstructorReturnValue<T>> = (v: any) => v()): ConstructorReturnValue<T> {
+        if (this.components.has(ctor)) throw new RangeError(`Entity already contains a component of type "${ctor.name}"`)
+
+        if (typeof callback != "function") {
+            const options = callback
+            callback = (v: any) => v().set(options)
+        }
+
+        return callback((...args) => {
+            const component = new ctor(this, this.system, ...args) as ConstructorReturnValue<T>
+
+            this.components.set(ctor, component)
+            component.init()
+
+            return component
+        }, this)
     }
 
     /** Return a reference to a component with the provided type, throws RangeError if not found */
@@ -117,6 +134,10 @@ export class Entity extends EventListener {
         return this.parent
     }
 
+    public unregisterComponent(component: Component) {
+        this.components.delete(component.constructor as ComponentConstructor)
+    }
+
     /**
      * Iterates over all children
      */
@@ -167,8 +188,13 @@ export class Entity extends EventListener {
         const hooks: ((entity: Entity) => void)[] = []
 
         const builder: ReadyEntityBuilder & IncompleteEntityBuilder = {
-            addComponent(ctor: ComponentConstructor, callback: AddComponentCallback = v => v()) {
+            addComponent(ctor: ComponentConstructor, callback: AddComponentCallback | Partial<Component> = v => v()) {
                 if (componentCallbacks.has(ctor)) throw new RangeError(`Entity already contains a component of type "${ctor.name}"`)
+
+                if (typeof callback != "function") {
+                    const options = callback
+                    callback = v => v().set(options)
+                }
 
                 componentCallbacks.set(ctor, callback)
 

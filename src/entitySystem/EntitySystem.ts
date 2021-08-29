@@ -1,8 +1,30 @@
-import { Disposable, DISPOSE } from "../eventLib/Disposable";
-import { EventEmitter } from "../eventLib/EventEmitter";
-import { Component } from "./Component";
-import { Entity } from "./Entity";
-import { ComponentConstructor, ConstructorReturnValue } from "./util";
+import { Disposable, DISPOSE } from "../eventLib/Disposable"
+import { EventEmitter } from "../eventLib/EventEmitter"
+import { Component } from "./Component"
+import { Entity, Prefab } from "./Entity"
+import { ComponentConstructor } from "./util"
+
+const emptyIterator: IterableIterator<never> = {
+    [Symbol.iterator]() {
+        return this
+    },
+    next() {
+        return { done: true, value: null }
+    }
+}
+
+function getConstructorChain(component: Component) {
+    let target = component.constructor as ComponentConstructor
+    const chain: ComponentConstructor[] = []
+    do {
+        if (target == Component as any) break
+        chain.push(target)
+    } while ((target = Object.getPrototypeOf(target)))
+
+    return chain
+}
+
+type ComponentType<T extends Component> = new (...args: any[]) => T
 
 /** 
  * Handles dispatching events on all components
@@ -17,16 +39,29 @@ export class EntitySystem extends Disposable {
         return this.events.get(event)!
     }
 
-    public findComponents<T extends ComponentConstructor>(type: T): ConstructorReturnValue<T>[] {
+    public findComponents<T extends Component>(type: ComponentType<T>): T[] {
         const set = this.components.get(type)
         if (set) {
-            return [...set.values()] as ConstructorReturnValue<T>[]
+            return [...set.values()] as T[]
         } else {
             return []
         }
     }
 
-    public findComponent<T extends ComponentConstructor>(type: T): ConstructorReturnValue<T> {
+    public iterateComponents<T extends Component>(type: ComponentType<T>): IterableIterator<T> {
+        const set = this.components.get(type)
+        if (set) {
+            return set.values() as IterableIterator<T>
+        } else {
+            return emptyIterator
+        }
+    }
+
+    public countComponents(type: ComponentConstructor) {
+        return this.components.get(type)?.size ?? 0
+    }
+
+    public findComponent<T extends Component>(type: ComponentType<T>): T {
         const ret = this.findComponents(type)
         if (ret.length > 0) return ret[0]
         else throw new Error(`Failed to find a component of type "${type.name}"`)
@@ -34,16 +69,18 @@ export class EntitySystem extends Disposable {
 
     /** Internal method to register a component into a component index */
     public registerComponent(component: Component) {
-        const ctor = component.constructor as ComponentConstructor
-        if (!this.components.has(ctor)) this.components.set(ctor, new Set())
+        for (const ctor of getConstructorChain(component)) {
+            if (!this.components.has(ctor)) this.components.set(ctor, new Set())
 
-        this.components.get(ctor)!.add(component)
+            this.components.get(ctor)!.add(component)
+        }
     }
 
     /** Internal method to unregister a component from a component index */
     public unregisterComponent(component: Component) {
-        const ctor = component.constructor as ComponentConstructor
-        if (!this.components.get(ctor)!.delete(component)) throw new Error("Tried to unregister a component that was newer registered")
+        for (const ctor of getConstructorChain(component)) {
+            if (!this.components.get(ctor)!.delete(component)) throw new Error("Tried to unregister a component that was newer registered")
+        }
     }
 
     /** Internal method to register entity for disposing */
@@ -78,6 +115,11 @@ export class EntitySystem extends Disposable {
         }
 
         this.events.clear()
+    }
+
+    public spawn(prefab: Prefab) {
+        const builder = Entity.make().setSystem(this)
+        return prefab(builder)
     }
 
     /** All EventEmitters, indexed by their event definition*/
